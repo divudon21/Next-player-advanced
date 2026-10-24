@@ -44,21 +44,15 @@ jobs:
           ./gradlew --console=plain --stacktrace :app:assembleReleaseWithDebugSigning test ktlintCheck 2>&1 | tee gradle-build.log
           gradle_status=${PIPESTATUS[0]}
           if [ "$gradle_status" -ne 0 ]; then
-            diagnostics="$(grep -E '(^e: |error:|FAILURE:|What went wrong|Caused by:|Unresolved reference|Could not resolve|Execution failed for task)' gradle-build.log | tail -n 30)"
-            if [ -z "$diagnostics" ]; then
-              diagnostics="$(tail -n 25 gradle-build.log)"
-            fi
+            diagnostics="$(tail -n 80 gradle-build.log)"
             {
-              echo '## Gradle failure diagnostics'
+              echo '## Gradle failure diagnostics (last 80 lines)'
               echo '```text'
               printf '%s\n' "$diagnostics"
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
-            while IFS= read -r line; do
-              escaped="${line//'%'/'%25'}"
-              escaped="${escaped//$'\r'/'%0D'}"
-              echo "::error title=Gradle failure::$escaped"
-            done <<< "$diagnostics"
+            escaped_diagnostics="$(printf '%s\n' "$diagnostics" | sed -e 's/%/%25/g' -e 's/\r/%0D/g' | sed ':a;N;$!ba;s/\n/%0A/g')"
+            echo "::error title=Gradle failure log::$escaped_diagnostics"
             exit "$gradle_status"
           fi
 
