@@ -41,7 +41,7 @@ jobs:
         shell: bash
         run: |
           set +e
-          ./gradlew --console=plain --stacktrace :app:assembleReleaseWithDebugSigning test ktlintCheck 2>&1 | tee gradle-build.log
+          ./gradlew --console=plain --stacktrace :app:assembleRelease-with-debug-signing test ktlintCheck 2>&1 | tee gradle-build.log
           gradle_status=${PIPESTATUS[0]}
           if [ "$gradle_status" -ne 0 ]; then
             diagnostics="$(sed -n '/^\* What went wrong:/,/^\* Try:/p' gradle-build.log)"
