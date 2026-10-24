@@ -1,0 +1,15 @@
+# Third-party notices
+
+## Next Player
+
+The application source in this repository is based on Next Player by Anil Beeseetti and contributors:
+https://github.com/anilbeesetti/nextplayer
+
+Copyright and license notices from the upstream project are retained. Next Player is distributed under the GNU General Public License version 3.0; see `LICENSE`.
+
+## Convx navigation design reference
+
+The liquid-glass navigation in this fork was independently implemented in Jetpack Compose with Convx as a visual and interaction reference:
+https://github.com/cosmictaserdev-creator/Convx
+
+Convx is licensed under the GNU General Public License version 3.0. No Convx source files are vendored in this repository.
