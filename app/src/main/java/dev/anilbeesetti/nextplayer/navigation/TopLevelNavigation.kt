@@ -99,7 +99,7 @@ enum class TopLevelDestination(
     RADIO(NetworkRoute, NextIcons.Headset, R.string.nav_radio, TopLevelFabKey.NETWORK),
     LIBRARY(PlaylistListRoute, NextIcons.Playlist, R.string.nav_library, TopLevelFabKey.PLAYLISTS),
     EXPLORE(MoreRoute, NextIcons.DashBoard, R.string.nav_explore, TopLevelFabKey.MORE),
-    SEARCH(SearchRoute, NextIcons.Search),
+    SEARCH(SearchRoute, NextIcons.Search, R.string.search),
 }
 
 @Composable
