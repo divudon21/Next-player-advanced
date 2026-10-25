@@ -2,11 +2,14 @@ package dev.anilbeesetti.nextplayer
 
 import android.content.Intent
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandHorizontally
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -15,21 +18,23 @@ import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.calculateBottomPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfoV2
 import androidx.compose.runtime.Composable
@@ -39,7 +44,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateMap
 import androidx.compose.ui.Alignment
@@ -48,9 +52,6 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -78,6 +79,10 @@ import dev.anilbeesetti.nextplayer.core.ui.components.thenIf
 import dev.anilbeesetti.nextplayer.core.ui.theme.NextPlayerTheme
 import dev.anilbeesetti.nextplayer.feature.videopicker.navigation.MediaPickerRoute
 import dev.anilbeesetti.nextplayer.navigation.NextNavigationBar
+import dev.anilbeesetti.nextplayer.navigation.convx.backdrop.backdrops.layerBackdrop
+import dev.anilbeesetti.nextplayer.navigation.convx.backdrop.backdrops.rememberLayerBackdrop
+import dev.anilbeesetti.nextplayer.navigation.convx.floatingtabbar.FloatingTabBarInlineBehavior
+import dev.anilbeesetti.nextplayer.navigation.convx.floatingtabbar.rememberFloatingTabBarScrollConnection
 import dev.anilbeesetti.nextplayer.navigation.NextNavigationRail
 import dev.anilbeesetti.nextplayer.navigation.TopLevelDestination
 import dev.anilbeesetti.nextplayer.navigation.TopLevelNavState
@@ -247,89 +252,111 @@ fun NavigationLayout(
     val fabFocusRequester = remember { FocusRequester() }
     val showNavRail = windowSizeClass.isWidthAtLeastBreakpoint(WindowSizeClass.WIDTH_DP_MEDIUM_LOWER_BOUND)
     val showNavigation = state.currentStack.lastOrNull()?.let { state.topLevelContentKeys.contains(it) } == true
-    var isNavigationCollapsed by remember { mutableStateOf(false) }
-    val onScrollDelta = rememberUpdatedState<(Float) -> Unit> { delta ->
-        if (!showNavRail && !isTv) {
-            when {
-                delta < -2f -> isNavigationCollapsed = true
-                delta > 2f -> isNavigationCollapsed = false
-            }
-        }
-    }
-    val navigationScrollConnection = remember {
-        object : NestedScrollConnection {
-            override fun onPostScroll(
-                consumed: Offset,
-                available: Offset,
-                source: NestedScrollSource,
-            ): Offset {
-                onScrollDelta.value(consumed.y)
-                return Offset.Zero
-            }
-        }
-    }
+    val scrollConnection = rememberFloatingTabBarScrollConnection(
+        inlineBehavior = if (showNavRail || isTv) {
+            FloatingTabBarInlineBehavior.Never
+        } else {
+            FloatingTabBarInlineBehavior.OnScrollDown
+        },
+    )
     LaunchedEffect(state.topLevelRoute, showNavigation, showBottomBar) {
-        isNavigationCollapsed = false
+        scrollConnection.expand()
     }
+
     val selectedFabState = state.destinations[state.selectedIndex].fabKey?.let(fabStates::get)
     var displayedFabState by remember { mutableStateOf<TopLevelFabState?>(null) }
     LaunchedEffect(selectedFabState) {
         selectedFabState?.let { displayedFabState = it }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        Scaffold(
-            modifier = modifier.nestedScroll(navigationScrollConnection),
-            bottomBar = {
-                AnimatedVisibility(
-                    visible = showNavigation && showBottomBar && !isNavigationCollapsed,
-                    enter = fadeIn() +
-                        slideInVertically { it / 2 } +
-                        expandVertically(expandFrom = Alignment.Bottom),
-                    exit = fadeOut() +
-                        slideOutVertically { it / 2 } +
-                        shrinkVertically(shrinkTowards = Alignment.Bottom),
-                ) {
-                    NextNavigationBar(
-                        state = state,
-                        fabState = displayedFabState,
-                        contentFocusRequester = contentFocusRequester,
-                        fabFocusRequester = fabFocusRequester,
-                        showFabOnly = showNavRail,
-                    )
-                }
-            },
-            containerColor = MaterialTheme.colorScheme.surfaceContainer,
-            contentWindowInsets = WindowInsets(0.dp),
-            content = {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .thenIf(isTv) {
-                            // The FAB sits outside screen content, whose full-height focus groups
-                            // overlap it. Enter the content explicitly instead of searching the rail.
-                            focusRequester(contentFocusRequester)
-                                .focusProperties {
-                                    onExit = {
-                                        if (requestedFocusDirection == FocusDirection.Down &&
-                                            showNavigation && showBottomBar && displayedFabState != null
-                                        ) {
-                                            fabFocusRequester.requestFocus()
-                                        }
+    val bottomBarContentHeight = when {
+        !showNavigation || !showBottomBar -> 0.dp
+        showNavRail && displayedFabState != null -> 56.dp
+        showNavRail -> 0.dp
+        else -> 68.dp
+    }
+    val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val targetBottomPadding = if (showNavigation && showBottomBar) {
+        bottomBarContentHeight + 12.dp + bottomInset
+    } else {
+        0.dp
+    }
+    val contentBottomPadding by animateDpAsState(
+        targetValue = targetBottomPadding,
+        animationSpec = tween(durationMillis = 220),
+        label = "navigation_content_bottom_padding",
+    )
+
+    val shouldCaptureBackdrop = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S &&
+        showNavigation && showBottomBar && !showNavRail
+    val backgroundColor = MaterialTheme.colorScheme.surfaceContainer
+    val appBackdrop = rememberLayerBackdrop(
+        onDraw = remember(backgroundColor) {
+            val backdropColor = backgroundColor
+            { drawRect(backdropColor); drawContent() }
+        },
+    )
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .nestedScroll(scrollConnection)
+            .background(backgroundColor),
+    ) {
+        // Capture only app content, not the navigation chrome that samples it. The source spans
+        // the full window so the liquid-glass bar can refract content all the way to the bottom edge.
+        Box(
+            Modifier
+                .fillMaxSize()
+                .thenIf(shouldCaptureBackdrop) { layerBackdrop(appBackdrop) },
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .thenIf(isTv) {
+                        focusRequester(contentFocusRequester)
+                            .focusProperties {
+                                onExit = {
+                                    if (requestedFocusDirection == FocusDirection.Down &&
+                                        showNavigation && showBottomBar && displayedFabState != null
+                                    ) {
+                                        fabFocusRequester.requestFocus()
                                     }
                                 }
-                                .focusGroup()
-                        },
-                ) {
-                    content(
-                        PaddingValues(
-                            start = if (showNavRail) railWidth else 0.dp,
-                            bottom = it.calculateBottomPadding(),
-                        ),
-                    )
-                }
-            },
-        )
+                            }
+                            .focusGroup()
+                    },
+            ) {
+                content(
+                    PaddingValues(
+                        start = if (showNavRail) railWidth else 0.dp,
+                        bottom = contentBottomPadding,
+                    ),
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = showNavigation && showBottomBar,
+            modifier = Modifier.align(Alignment.BottomCenter),
+            enter = fadeIn() +
+                slideInVertically { it / 2 } +
+                expandVertically(expandFrom = Alignment.Bottom),
+            exit = fadeOut() +
+                slideOutVertically { it / 2 } +
+                shrinkVertically(shrinkTowards = Alignment.Bottom),
+        ) {
+            NextNavigationBar(
+                state = state,
+                fabState = displayedFabState,
+                contentFocusRequester = contentFocusRequester,
+                fabFocusRequester = fabFocusRequester,
+                scrollConnection = scrollConnection,
+                appBackdrop = appBackdrop,
+                showFabOnly = showNavRail,
+            )
+        }
+
         AnimatedVisibility(
             visible = showNavRail && showNavigation,
             enter = fadeIn() + expandHorizontally(expandFrom = Alignment.Start),

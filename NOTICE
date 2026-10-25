@@ -7,9 +7,19 @@ https://github.com/anilbeesetti/nextplayer
 
 Copyright and license notices from the upstream project are retained. Next Player is distributed under the GNU General Public License version 3.0; see `LICENSE`.
 
-## Convx navigation design reference
+## Convx primary navigation
 
-The liquid-glass navigation in this fork was independently implemented in Jetpack Compose with Convx as a visual and interaction reference:
+The primary floating navigation bar in `app/src/main/java/dev/anilbeesetti/nextplayer/navigation/convx/` is adapted from Convx's `AppFloatingNavBar`, `FoldingTabBar`, and `FoldingTabGroup` implementations:
 https://github.com/cosmictaserdev-creator/Convx
 
-Convx is licensed under the GNU General Public License version 3.0. No Convx source files are vendored in this repository.
+Source revision: `5a78db4baf4f31633d1ab1bb4c73ba19be7da24c`. Convx is licensed under GPL-3.0. The port retains Convx's folding navigation, detached Search control, draggable selection puck, glass treatment, and interaction/motion code, adapted to Next Player's five top-level routes and Compose navigation state. Convx-specific mini-player and inline search-mode branches are not included. See `LICENSE` and the source headers in the port for applicable notices.
+
+## Kyant0 backdrop and liquid-glass utilities
+
+The source files under `app/src/main/java/dev/anilbeesetti/nextplayer/navigation/convx/backdrop/` are vendored from Kyant0/backdrop v2.0.0 and Kyant0/AndroidLiquidGlass, as incorporated and adapted by Convx. Copyright 2025 Kyant0. Licensed under the Apache License, Version 2.0.
+
+## Kyant0 Capsule shapes
+
+The source files under `app/src/main/java/dev/anilbeesetti/nextplayer/navigation/convx/shapes/` are vendored from Kyant0/Capsule, as incorporated and adapted by Convx. Copyright 2025 Kyant0. Licensed under the Apache License, Version 2.0.
+
+The Apache License, Version 2.0, is included at `LICENSES/Apache-2.0.txt`. Individual source files retain their original attribution and license headers.

@@ -54,10 +54,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -76,7 +74,6 @@ import dev.anilbeesetti.nextplayer.core.common.extensions.isTelevision
 import dev.anilbeesetti.nextplayer.core.ui.R
 import dev.anilbeesetti.nextplayer.core.ui.components.TopLevelFabKey
 import dev.anilbeesetti.nextplayer.core.ui.components.TopLevelFabState
-import dev.anilbeesetti.nextplayer.core.ui.components.thenIf
 import dev.anilbeesetti.nextplayer.core.ui.components.tvFocusRing
 import dev.anilbeesetti.nextplayer.core.ui.designsystem.NextIcons
 import dev.anilbeesetti.nextplayer.feature.more.navigation.MoreRoute
@@ -84,6 +81,9 @@ import dev.anilbeesetti.nextplayer.feature.network.navigation.NetworkRoute
 import dev.anilbeesetti.nextplayer.feature.playlist.navigation.PlaylistListRoute
 import dev.anilbeesetti.nextplayer.feature.videopicker.navigation.MediaPickerRoute
 import dev.anilbeesetti.nextplayer.feature.videopicker.navigation.SearchRoute
+import dev.anilbeesetti.nextplayer.navigation.convx.ConvxPrimaryNavigationBar
+import dev.anilbeesetti.nextplayer.navigation.convx.backdrop.backdrops.LayerBackdrop
+import dev.anilbeesetti.nextplayer.navigation.convx.floatingtabbar.FloatingTabBarScrollConnection
 
 /**
  * Top-level destinations shown in the bottom bar / nav rail. Home is the start destination; the
@@ -217,29 +217,18 @@ fun NextNavigationBar(
     fabState: TopLevelFabState?,
     contentFocusRequester: FocusRequester,
     fabFocusRequester: FocusRequester,
+    scrollConnection: FloatingTabBarScrollConnection,
+    appBackdrop: LayerBackdrop,
     showFabOnly: Boolean = false,
 ) {
     val isTv = LocalContext.current.isTelevision
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .thenIf(condition = !showFabOnly) {
-                background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            MaterialTheme.colorScheme.background,
-                        ),
-                    ),
-                )
-            }
             .navigationBarsPadding()
             .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))
             .padding(bottom = 12.dp)
-            .padding(horizontal = 16.dp)
-            .thenIf(condition = !showFabOnly) {
-                pointerInput(Unit) {}
-            },
+            .padding(horizontal = 16.dp),
         contentAlignment = Alignment.BottomCenter,
     ) {
         Row(
@@ -247,10 +236,10 @@ fun NextNavigationBar(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             if (!showFabOnly) {
-                LiquidGlassNavigationBar(
-                    destinations = state.destinations,
-                    isSelected = { it.route == state.topLevelRoute },
-                    onDestinationClick = { state.switchTo(it.route) },
+                ConvxPrimaryNavigationBar(
+                    state = state,
+                    scrollConnection = scrollConnection,
+                    appBackdrop = appBackdrop,
                     modifier = Modifier.weight(1f),
                 )
             } else {
