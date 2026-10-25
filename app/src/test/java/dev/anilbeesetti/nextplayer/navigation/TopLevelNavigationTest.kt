@@ -1,8 +1,11 @@
 package dev.anilbeesetti.nextplayer.navigation
 
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.unit.dp
 import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.NavKey
+import dev.anilbeesetti.nextplayer.core.ui.components.TopLevelFabState
+import dev.anilbeesetti.nextplayer.core.ui.designsystem.NextIcons
 import dev.anilbeesetti.nextplayer.feature.playlist.navigation.PlaylistDetailRoute
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -20,6 +23,30 @@ class TopLevelNavigationTest {
                 TopLevelDestination.SEARCH,
             ),
             TopLevelDestination.entries,
+        )
+    }
+
+    @Test
+    fun playFabReservesSpaceAboveTheFullWidthBottomBar() {
+        val playFab = TopLevelFabState(NextIcons.Play, {})
+
+        assertEquals(
+            144.dp,
+            topLevelNavigationContentHeight(
+                showNavigation = true,
+                showBottomBar = true,
+                showNavRail = false,
+                fabState = playFab,
+            ),
+        )
+        assertEquals(
+            64.dp,
+            topLevelNavigationContentHeight(
+                showNavigation = true,
+                showBottomBar = true,
+                showNavRail = true,
+                fabState = playFab,
+            ),
         )
     }
 

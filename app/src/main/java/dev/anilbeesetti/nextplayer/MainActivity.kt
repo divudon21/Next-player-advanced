@@ -93,6 +93,7 @@ import dev.anilbeesetti.nextplayer.navigation.openPlaylist
 import dev.anilbeesetti.nextplayer.navigation.playlistNavGraph
 import dev.anilbeesetti.nextplayer.navigation.rememberTopLevelNavState
 import dev.anilbeesetti.nextplayer.navigation.settingsNavGraph
+import dev.anilbeesetti.nextplayer.navigation.topLevelNavigationContentHeight
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
@@ -268,12 +269,12 @@ fun NavigationLayout(
         selectedFabState?.let { displayedFabState = it }
     }
 
-    val bottomBarContentHeight = when {
-        !showNavigation || !showBottomBar -> 0.dp
-        showNavRail && displayedFabState != null -> 56.dp
-        showNavRail -> 0.dp
-        else -> 68.dp
-    }
+    val bottomBarContentHeight = topLevelNavigationContentHeight(
+        showNavigation = showNavigation,
+        showBottomBar = showBottomBar,
+        showNavRail = showNavRail,
+        fabState = displayedFabState,
+    )
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val targetBottomPadding = if (showNavigation && showBottomBar) {
         bottomBarContentHeight + 12.dp + bottomInset

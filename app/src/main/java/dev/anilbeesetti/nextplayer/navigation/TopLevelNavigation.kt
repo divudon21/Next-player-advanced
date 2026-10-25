@@ -60,6 +60,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.NavBackStack
@@ -229,58 +230,120 @@ fun NextNavigationBar(
             .windowInsetsPadding(WindowInsets.displayCutout.only(WindowInsetsSides.Horizontal))
             .padding(bottom = 12.dp)
             .padding(horizontal = 16.dp),
-        contentAlignment = Alignment.BottomCenter,
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            if (!showFabOnly) {
-                ConvxPrimaryNavigationBar(
-                    state = state,
-                    scrollConnection = scrollConnection,
-                    appBackdrop = appBackdrop,
-                    modifier = Modifier.weight(1f),
-                )
-            } else {
+        if (showFabOnly) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
                 Spacer(Modifier.weight(1f))
-            }
-
-            fabState?.let { fab ->
-                FloatingActionButton(
-                    onClick = fab.onClick,
-                    modifier = Modifier
-                        .testTag("top_level_fab")
-                        .focusRequester(fabFocusRequester)
-                        .tvFocusRing(shape = MaterialTheme.shapes.large)
-                        .focusProperties {
-                            if (isTv) {
-                                up = fab.upFocusRequester.takeUnless { it == FocusRequester.Default }
-                                    ?: contentFocusRequester
-                            }
-                        },
-                    shape = MaterialTheme.shapes.large,
-                ) {
-                    AnimatedContent(
-                        targetState = fab,
-                        transitionSpec = {
-                            fadeIn(tween(250, easing = FastOutSlowInEasing)) +
-                                scaleIn(tween(250, easing = FastOutSlowInEasing), initialScale = 0.25f) togetherWith
-                                fadeOut(tween(250, easing = FastOutSlowInEasing)) +
-                                scaleOut(tween(250, easing = FastOutSlowInEasing), targetScale = 0.25f)
-                        },
-                        label = "fab_icon_swap",
-                    ) { fab ->
-                        Icon(
-                            imageVector = fab.icon,
-                            contentDescription = null,
-                        )
-                    }
+                fabState?.let { fab ->
+                    val isPlayButton = fab.icon == NextIcons.Play
+                    NavigationActionFab(
+                        fab = fab,
+                        contentFocusRequester = contentFocusRequester,
+                        fabFocusRequester = fabFocusRequester,
+                        isTv = isTv,
+                        modifier = Modifier.size(if (isPlayButton) PlayFabSize else StandardFabSize),
+                        iconSize = if (isPlayButton) PlayFabIconSize else StandardFabIconSize,
+                    )
                 }
+            }
+        } else {
+            ConvxPrimaryNavigationBar(
+                state = state,
+                scrollConnection = scrollConnection,
+                appBackdrop = appBackdrop,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+            )
+            fabState?.let { fab ->
+                val isPlayButton = fab.icon == NextIcons.Play
+                NavigationActionFab(
+                    fab = fab,
+                    contentFocusRequester = contentFocusRequester,
+                    fabFocusRequester = fabFocusRequester,
+                    isTv = isTv,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(bottom = NavigationBarHeight + NavigationFabGap)
+                        .size(if (isPlayButton) PlayFabSize else StandardFabSize),
+                    iconSize = if (isPlayButton) PlayFabIconSize else StandardFabIconSize,
+                )
             }
         }
     }
 }
+
+@Composable
+private fun NavigationActionFab(
+    fab: TopLevelFabState,
+    contentFocusRequester: FocusRequester,
+    fabFocusRequester: FocusRequester,
+    isTv: Boolean,
+    modifier: Modifier = Modifier,
+    iconSize: Dp = StandardFabIconSize,
+) {
+    FloatingActionButton(
+        onClick = fab.onClick,
+        modifier = modifier
+            .testTag("top_level_fab")
+            .focusRequester(fabFocusRequester)
+            .tvFocusRing(shape = MaterialTheme.shapes.large)
+            .focusProperties {
+                if (isTv) {
+                    up = fab.upFocusRequester.takeUnless { it == FocusRequester.Default }
+                        ?: contentFocusRequester
+                }
+            },
+        shape = MaterialTheme.shapes.large,
+    ) {
+        AnimatedContent(
+            targetState = fab,
+            transitionSpec = {
+                fadeIn(tween(250, easing = FastOutSlowInEasing)) +
+                    scaleIn(tween(250, easing = FastOutSlowInEasing), initialScale = 0.25f) togetherWith
+                    fadeOut(tween(250, easing = FastOutSlowInEasing)) +
+                    scaleOut(tween(250, easing = FastOutSlowInEasing), targetScale = 0.25f)
+            },
+            label = "fab_icon_swap",
+        ) { targetFab ->
+            Icon(
+                imageVector = targetFab.icon,
+                contentDescription = null,
+                modifier = Modifier.size(iconSize),
+            )
+        }
+    }
+}
+
+internal fun topLevelNavigationContentHeight(
+    showNavigation: Boolean,
+    showBottomBar: Boolean,
+    showNavRail: Boolean,
+    fabState: TopLevelFabState?,
+): Dp {
+    if (!showNavigation || !showBottomBar) return 0.dp
+    if (showNavRail) {
+        return when {
+            fabState == null -> 0.dp
+            fabState.icon == NextIcons.Play -> PlayFabSize
+            else -> StandardFabSize
+        }
+    }
+    if (fabState == null) return NavigationBarHeight
+    val fabHeight = if (fabState.icon == NextIcons.Play) PlayFabSize else StandardFabSize
+    return NavigationBarHeight + NavigationFabGap + fabHeight
+}
+
+private val NavigationBarHeight = 68.dp
+private val NavigationFabGap = 12.dp
+private val StandardFabSize = 56.dp
+private val StandardFabIconSize = 24.dp
+private val PlayFabSize = 64.dp
+private val PlayFabIconSize = 28.dp
 
 @Composable
 fun NextNavigationRail(state: TopLevelNavState, modifier: Modifier = Modifier) {
